@@ -208,7 +208,7 @@ class StatusBarPill(
             handler.removeCallbacks(plainTick)
             handler.post(plainTick)
         }
-        plainAdvanceRunnable.run()
+        plainAdvanceRunnable!!.run()
     }
 
     private fun stopPlainTicker() {
