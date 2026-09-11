@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.autolyrics"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.autolyrics"
-        minSdk = 26
-        targetSdk = 34
+        minSdk = 34
+        targetSdk = 36
         versionCode = 40
         versionName = "2.0.0"
     }
