@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Build
 import android.provider.Settings
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -88,6 +89,38 @@ class MainActivity : AppCompatActivity() {
     private val scrollResetRunnable = Runnable {
         userScrolling = false
         btnJumpToCurrent.visibility = View.GONE
+    }
+
+    /**
+     * The status-bar pill is a promoted ongoing notification, so the app needs
+     * the regular notification permission AND — on Android 16 — the promoted
+     * ("Live Updates") posting permission, which is granted per-app from the
+     * system Settings rather than a runtime dialog.
+     */
+    private fun requestStatusBarPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                4001
+            )
+        }
+
+        if (Build.VERSION.SDK_INT >= 36 &&
+            checkSelfPermission("android.permission.POST_PROMOTED_NOTIFICATIONS") !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            // No runtime dialog exists for this one; send the user to the
+            // app's notification settings where Live Updates can be toggled.
+            try {
+                startActivity(
+                    Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+                )
+            } catch (_: Exception) { }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -203,6 +236,7 @@ class MainActivity : AppCompatActivity() {
         switchSbEnabled.isChecked = sbPrefs.enabled
         switchSbEnabled.setOnCheckedChangeListener { _, isChecked ->
             sbPrefs.enabled = isChecked
+            if (isChecked) requestStatusBarPermissions()
         }
 
         findViewById<Button>(R.id.btn_sb_mode_single).setOnClickListener {

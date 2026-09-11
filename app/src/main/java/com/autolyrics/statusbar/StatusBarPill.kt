@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.os.Handler
 import android.os.Looper
 import androidx.core.app.NotificationCompat
+import com.autolyrics.R
 import com.autolyrics.media.MediaTracker
 import com.autolyrics.model.LyricsState
 import com.autolyrics.model.LyricsStatus
@@ -223,6 +224,7 @@ class StatusBarPill(
         state: LyricsState?
     ): Notification {
         val builder = NotificationCompat.Builder(context, StatusBarLyricsService.CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_lyrics)
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_PROGRESS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -232,12 +234,13 @@ class StatusBarPill(
             .setShortCriticalText(text)
             .setSubText(sub)
 
-        if (prefs.showTrackHeader) {
-            val title = state?.track?.title ?: "StatusBar Lyrics"
-            builder.setContentTitle(title)
-            if (sub.isNotBlank()) {
-                builder.setContentText(sub)
-            }
+        // A content title is always required — without it (or without a small
+        // icon) Android silently drops the notification and no pill appears.
+        builder.setContentTitle(
+            state?.track?.let { it.title.ifBlank { it.artist } } ?: "StatusBar Lyrics"
+        )
+        if (prefs.showTrackHeader && sub.isNotBlank()) {
+            builder.setContentText(sub)
         }
 
         val track = state?.track
