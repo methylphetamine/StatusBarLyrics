@@ -70,7 +70,7 @@ class StatusBarPill(
             marqueeOffset += 1
             if (marqueeOffset > src.length + 4) marqueeOffset = 0
             lastText = marqueePillText(src)
-            show(lastText!!, lastSub)
+            show(lastText ?: "", lastSub ?: "")
             handler.postDelayed(this, MARQUEE_INTERVAL_MS)
         }
     }
@@ -171,8 +171,8 @@ class StatusBarPill(
     private fun show(text: String, sub: String, state: LyricsState? = null) {
         // The pill slot can only fit a few characters: collapse any multi-line
         // CONTEXT window to the active line and clip the text to the window.
-        val firstLine = text.lineSequence().firstOrNull { it.isNotBlank() }
-            ?.replace("▶", "").replace("♪", "").trim() ?: text
+        val raw = text.lineSequence().firstOrNull { it.isNotBlank() } ?: text
+        val firstLine = raw.replace("▶", "").replace("♪", "").trim()
         val pillText = marqueePillText(firstLine)
 
         if (pillText == lastText && sub == lastSub) return

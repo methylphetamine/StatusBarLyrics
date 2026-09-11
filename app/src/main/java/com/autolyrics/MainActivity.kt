@@ -36,6 +36,7 @@ import com.autolyrics.media.MediaTracker
 import com.autolyrics.model.AlbumColors
 import com.autolyrics.model.LyricsState
 import com.autolyrics.model.LyricsStatus
+import com.autolyrics.statusbar.StatusBarClockHook
 import com.autolyrics.statusbar.StatusBarLineMode
 import com.autolyrics.statusbar.StatusBarPrefs
 import kotlinx.coroutines.launch
