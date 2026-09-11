@@ -71,4 +71,7 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    // Xposed API (compileOnly - provided at runtime by LSPosed/EdXposed)
+    compileOnly("de.robv.android.xposed:api:82")
 }

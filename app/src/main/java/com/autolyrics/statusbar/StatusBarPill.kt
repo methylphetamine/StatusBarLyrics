@@ -37,6 +37,44 @@ class StatusBarPill(
     private var plainIndex = 0
     private var plainAdvanceRunnable: Runnable? = null
 
+    /** Marquee position for the tiny pill slot (chars already scrolled past). */
+    private var marqueeOffset = 0
+    private var marqueeSource: String? = null
+
+    /**
+     * The Live-Activity pill slot is only a few characters wide — long lyric
+     * lines render as nothing. We therefore feed the pill a short scrolling
+     * window over the lyric text (like a ticker) and advance it on a timer.
+     * The full line still lives in the shade notification.
+     */
+    private fun marqueePillText(text: String): String {
+        val clean = text.replace("\\s+".toRegex(), " ").trim()
+        if (clean.length <= PILL_WINDOW) {
+            marqueeSource = null
+            return clean
+        }
+        if (clean != marqueeSource) {
+            marqueeSource = clean
+            marqueeOffset = 0
+        }
+        val padded = "$clean    "
+        val end = (marqueeOffset + PILL_WINDOW).coerceAtMost(padded.length)
+        val head = padded.substring(marqueeOffset, end)
+        // Pad the tail so the window stays a fixed width while scrolling.
+        return head.padEnd(PILL_WINDOW)
+    }
+
+    private val marqueeTick = object : Runnable {
+        override fun run() {
+            val src = marqueeSource ?: return
+            marqueeOffset += 1
+            if (marqueeOffset > src.length + 4) marqueeOffset = 0
+            lastText = marqueePillText(src)
+            show(lastText!!, lastSub)
+            handler.postDelayed(this, MARQUEE_INTERVAL_MS)
+        }
+    }
+
     private val plainTick = object : Runnable {
         override fun run() {
             val current = mediaTracker.state.value
@@ -61,11 +99,14 @@ class StatusBarPill(
         plainAdvanceRunnable?.let { handler.removeCallbacks(it) }
         plainAdvanceRunnable = null
         handler.removeCallbacks(plainTick)
+        handler.removeCallbacks(marqueeTick)
         try {
             manager.cancel(StatusBarLyricsService.NOTIFICATION_ID)
         } catch (_: Exception) { }
         lastText = null
         lastSub = null
+        marqueeSource = null
+        marqueeOffset = 0
 }
 
     private fun onStateUpdated(state: LyricsState) {
@@ -128,20 +169,32 @@ class StatusBarPill(
     }
 
     private fun show(text: String, sub: String, state: LyricsState? = null) {
-        if (text == lastText && sub == lastSub) return
-        lastText = text
+        // The pill slot can only fit a few characters: collapse any multi-line
+        // CONTEXT window to the active line and clip the text to the window.
+        val firstLine = text.lineSequence().firstOrNull { it.isNotBlank() }
+            ?.replace("▶", "").replace("♪", "").trim() ?: text
+        val pillText = marqueePillText(firstLine)
+
+        if (pillText == lastText && sub == lastSub) return
+        lastText = pillText
         lastSub = sub
         val notification = try {
-            buildNotification(text, sub, state)
+            buildNotification(pillText, sub, state)
         } catch (_: Exception) {
             null
         } ?: return
         try {
             manager.notify(StatusBarLyricsService.NOTIFICATION_ID, notification)
         } catch (_: Exception) { }
+        // Kick (or reset) the marquee ticker for the tiny pill slot.
+        handler.removeCallbacks(marqueeTick)
+        handler.postDelayed(marqueeTick, MARQUEE_INTERVAL_MS)
     }
 
     private fun hide() {
+        handler.removeCallbacks(marqueeTick)
+        marqueeSource = null
+        marqueeOffset = 0
         if (lastText == null && lastSub == null) return
         lastText = null
         lastSub = null
@@ -254,5 +307,13 @@ class StatusBarPill(
         }
 
         return builder.build()
+    }
+
+    private companion object {
+        /** How many characters of text the pill slot can actually render. */
+        const val PILL_WINDOW = 7
+
+        /** Marquee scroll step interval in ms. */
+        const val MARQUEE_INTERVAL_MS = 350L
     }
 }

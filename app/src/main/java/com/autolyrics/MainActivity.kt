@@ -239,6 +239,29 @@ class MainActivity : AppCompatActivity() {
             if (isChecked) requestStatusBarPermissions()
         }
 
+        // Xposed clock-replace mode toggle
+        val switchXposed = findViewById<SwitchCompat>(R.id.switch_xposed_mode)
+        val appPrefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        switchXposed.isChecked = appPrefs.getBoolean("xposed_mode", false)
+        switchXposed.setOnCheckedChangeListener { _, isChecked ->
+            appPrefs.edit().putBoolean("xposed_mode", isChecked).apply()
+            StatusBarClockHook.enabled = isChecked
+            if (isChecked) {
+                // Check if Xposed is actually available
+                val xposedAvailable = try {
+                    Class.forName("de.robv.android.xposed.XposedBridge")
+                    true
+                } catch (e: ClassNotFoundException) {
+                    false
+                }
+                if (!xposedAvailable) {
+                    switchXposed.isChecked = false
+                    appPrefs.edit().putBoolean("xposed_mode", false).apply()
+                    showSyncStatus("Xposed/LSPosed not detected — module disabled")
+                }
+            }
+        }
+
         findViewById<Button>(R.id.btn_sb_mode_single).setOnClickListener {
             sbPrefs.lineMode = StatusBarLineMode.SINGLE
             updateSbModeButtons()

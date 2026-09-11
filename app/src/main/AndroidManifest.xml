@@ -85,6 +85,17 @@
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
 
+        <!-- Xposed module metadata -->
+        <meta-data
+            android:name="xposedmodule"
+            android:value="true" />
+        <meta-data
+            android:name="xposeddescription"
+            android:value="Replace status bar clock with lyrics" />
+        <meta-data
+            android:name="xposedminversion"
+            android:value="82" />
+
     </application>
 
 </manifest>
