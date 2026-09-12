@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.collect
  * Controls whether lyrics are sent to the Xposed clock hook or the standard pill.
  *
  * When Xposed/LSPosed is available and this app is enabled as an Xposed module,
- * lyrics are pushed directly to [StatusBarClockHook.currentLyric] which the hook
+ * lyrics are pushed directly to [XposedConfig.currentLyric] which the hook
  * reads to replace the system clock text. Otherwise falls back to the notification
  * pill.
  */
@@ -26,15 +26,11 @@ class XposedClockController(private val context: Application) {
 
     private var lastLyric: String? = null
 
-    /**
-     * Whether the Xposed hook is active (LSPosed module enabled for SystemUI).
-     */
     val isActive: Boolean
-        get() = StatusBarClockHook.enabled && isXposedModuleEnabled()
+        get() = XposedConfig.enabled
 
     fun start() {
-        // Enable the hook flag
-        StatusBarClockHook.enabled = appPrefs.getBoolean(KEY_XPOSED_MODE, false)
+        XposedConfig.enabled = appPrefs.getBoolean(KEY_XPOSED_MODE, false)
 
         scope.launch {
             mediaTracker.state.collect { state ->
@@ -45,28 +41,15 @@ class XposedClockController(private val context: Application) {
 
     fun stop() {
         scope.cancel()
-        StatusBarClockHook.currentLyric = null
+        XposedConfig.currentLyric = null
         lastLyric = null
     }
 
     fun setEnabled(enabled: Boolean) {
         appPrefs.edit().putBoolean(KEY_XPOSED_MODE, enabled).apply()
-        StatusBarClockHook.enabled = enabled
+        XposedConfig.enabled = enabled
         if (!enabled) {
-            StatusBarClockHook.currentLyric = null
-        }
-    }
-
-    private fun isXposedModuleEnabled(): Boolean {
-        // Check if our Xposed module is loaded by looking for the xposed_init marker
-        // and if the hook has been initialized
-        return try {
-            // If we can access XposedBridge, the module framework is available
-            Class.forName("de.robv.android.xposed.XposedBridge")
-            // Check if our hook has been instantiated (set by the hook's companion)
-            StatusBarClockHook.enabled
-        } catch (e: ClassNotFoundException) {
-            false
+            XposedConfig.currentLyric = null
         }
     }
 
@@ -114,7 +97,6 @@ class XposedClockController(private val context: Application) {
     }
 
     private fun buildContextForClock(lines: List<com.autolyrics.model.LyricLine>, cur: Int): String {
-        // For clock display, just show the current line - too many chars otherwise
         return lines[cur].text
     }
 
@@ -123,7 +105,7 @@ class XposedClockController(private val context: Application) {
         lastLyric = lyric
 
         if (isActive) {
-            StatusBarClockHook.currentLyric = lyric
+            XposedConfig.currentLyric = lyric
         }
     }
 

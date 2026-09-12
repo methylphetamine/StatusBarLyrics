@@ -21,17 +21,11 @@ class StatusBarClockHook : de.robv.android.xposed.IXposedHookLoadPackage {
     companion object {
         private const val TAG = "StatusBarLyrics"
         private const val SYSTEM_UI_PKG = "com.android.systemui"
-
-        @Volatile
-        var currentLyric: String? = null
-
-        @Volatile
-        var enabled: Boolean = false
     }
 
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
         if (lpparam.packageName != SYSTEM_UI_PKG) return
-        if (!enabled) return
+        if (!XposedConfig.enabled) return
 
         try {
             hookClock(lpparam)
@@ -49,7 +43,7 @@ class StatusBarClockHook : de.robv.android.xposed.IXposedHookLoadPackage {
 
         XposedBridge.hookAllMethods(clockClass, "setText", object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
-                val lyric = currentLyric
+                val lyric = XposedConfig.currentLyric
                 if (!lyric.isNullOrBlank()) {
                     // Replace clock text with lyric
                     param.args[0] = lyric
@@ -61,7 +55,7 @@ class StatusBarClockHook : de.robv.android.xposed.IXposedHookLoadPackage {
         XposedBridge.hookAllMethods(clockClass, "invalidate", object : XC_MethodHook() {
             override fun afterHookedMethod(param: MethodHookParam) {
                 val textView = param.thisObject as? TextView ?: return
-                val lyric = currentLyric
+                val lyric = XposedConfig.currentLyric
                 if (!lyric.isNullOrBlank() && textView.text != lyric) {
                     textView.text = lyric
                 }

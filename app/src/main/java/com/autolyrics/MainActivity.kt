@@ -36,7 +36,6 @@ import com.autolyrics.media.MediaTracker
 import com.autolyrics.model.AlbumColors
 import com.autolyrics.model.LyricsState
 import com.autolyrics.model.LyricsStatus
-import com.autolyrics.statusbar.StatusBarClockHook
 import com.autolyrics.statusbar.StatusBarLineMode
 import com.autolyrics.statusbar.StatusBarPrefs
 import kotlinx.coroutines.launch
@@ -246,20 +245,9 @@ class MainActivity : AppCompatActivity() {
         switchXposed.isChecked = appPrefs.getBoolean("xposed_mode", false)
         switchXposed.setOnCheckedChangeListener { _, isChecked ->
             appPrefs.edit().putBoolean("xposed_mode", isChecked).apply()
-            StatusBarClockHook.enabled = isChecked
-            if (isChecked) {
-                // Check if Xposed is actually available
-                val xposedAvailable = try {
-                    Class.forName("de.robv.android.xposed.XposedBridge")
-                    true
-                } catch (e: ClassNotFoundException) {
-                    false
-                }
-                if (!xposedAvailable) {
-                    switchXposed.isChecked = false
-                    appPrefs.edit().putBoolean("xposed_mode", false).apply()
-                    showSyncStatus("Xposed/LSPosed not detected — module disabled")
-                }
+            XposedConfig.enabled = isChecked
+            if (!isChecked) {
+                XposedConfig.currentLyric = null
             }
         }
 
