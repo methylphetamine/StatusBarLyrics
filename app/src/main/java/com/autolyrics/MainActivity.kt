@@ -38,6 +38,7 @@ import com.autolyrics.model.LyricsState
 import com.autolyrics.model.LyricsStatus
 import com.autolyrics.statusbar.StatusBarLineMode
 import com.autolyrics.statusbar.StatusBarPrefs
+import com.autolyrics.statusbar.XposedConfig
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
